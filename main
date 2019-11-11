@@ -1,0 +1,123 @@
+#define NUM_SAMPLE 15000 //число выборок для среднего напряжения
+#define BATTERY_VOLTAGE 12.00 //номинальное напряжение батареи
+#define DIVIDER 3 //коэффициент делителя аналог. входа
+#define SEC 5 //задержка между измерениями
+#define RELAY 4 //номер ноги с реле
+#define MAX_TEMP 70 //номер ноги с реле
+#define MAX_HUMIDITY 75 //номер ноги с реле
+
+#include <stDHT.h>
+DHT sens(DHT11);
+const int SENSOR = 7;
+
+void setup() {
+
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(8, OUTPUT);
+  pinMode(9, OUTPUT);
+  pinMode(10, OUTPUT);
+  pinMode(11, OUTPUT);
+  pinMode(12, OUTPUT);
+  pinMode(13, OUTPUT);
+
+  Serial.begin(9600);
+  digitalWrite(SENSOR, true);
+}// инициализация последовательного порта на скорости 9600:
+//float a = 0;
+//float average, average2;
+
+float a, Vstate, average, average2 = 0;
+int cycle = 0;
+bool F1, F2 = false;
+
+
+void loop() {// цикл
+
+  long sum = 0;
+  for (int i = 0; i < NUM_SAMPLE; i++) {
+    sum += analogRead(A0); // читаем вход на аналоговом пине А0 и складываем его
+  } average = sum / NUM_SAMPLE; // вычисляем среднее значение напряжения на батарее
+
+  a = 5 * DIVIDER * average / 1023;
+
+  int h = sens.readHumidity(SENSOR);
+  int t = sens.readTemperature(SENSOR);
+
+  Serial.print("влажность: ");
+  Serial.print(h);
+  Serial.print("%\n");
+  Serial.print("температура: ");
+  Serial.print(t);
+  Serial.print("°C\n");
+  Serial.print(a);
+  Serial.print(" Вольт на аккумуляторе\n");
+
+  //readAnalogVoltage(A2)
+  long sum2 = 0;
+  for (int i = 0; i < NUM_SAMPLE; i++) {
+    sum2 += analogRead(A2); // читаем вход на аналоговом пине А2 и складываем его
+  } average2 = sum2 / NUM_SAMPLE; // вычисляем среднее значение напряжения на питании МК
+
+  Vstate = 5 * 2 * average2 / 1023;
+  Serial.print(Vstate);
+  Serial.print(" Вольт питание МК\n");
+  // преобразуем аналоговый сигнал (амплитуда 0 - 1023) в напряжение (0 - 5В):
+  // используем делитель 1к3, чтобы входной сигнал попал в ограничение до 5В;
+  // выводим значение напряжения:
+  if (a < BATTERY_VOLTAGE * 0.83) //если разрядилась ниже 11В, то сработал нижний флаг;
+  {
+    F1 = true;
+  }
+
+  if (a > 0.92 * BATTERY_VOLTAGE) //если зарядилась выше 12В, то сработал верхний флаг;
+  {
+    F2 = true;
+  }
+
+  if (F1 && F2) //если оба флага истинны,значит добавляем +1 к счетчику циклов;
+  { cycle++;
+    F1 = F2 = false;
+  }    //обнуляем оба флага;
+  Serial.print(cycle);
+  Serial.print(" число циклов\n");
+  if (1.00 < a && a < BATTERY_VOLTAGE * 0.77)
+  {
+    digitalWrite(10, HIGH);  //индикация низкого напряжения
+  } else {
+    digitalWrite(10, LOW);
+  }
+  if (a < 1.00)
+  {
+    digitalWrite(12, HIGH);  //сред.сд= индикация обрыва цепи измерителя
+  } else {
+    digitalWrite(12, LOW);
+  }
+  if (a > 1, 15 * BATTERY_VOLTAGE)
+  {
+    digitalWrite(11, HIGH);  //индикация перенапряжения
+  } else {
+    digitalWrite(11, LOW);
+  }
+
+  Serial.print("__________________\n");
+
+  if ((a < BATTERY_VOLTAGE * 0.77) or (t > MAX_TEMP) or (h > MAX_HUMIDITY) )  //условие на размыкание по напряжению, температуре или влажности
+  {
+    digitalWrite(RELAY, LOW);
+    delay(SEC * 1000);
+  } else {
+    digitalWrite(RELAY, HIGH);
+    delay(SEC * 1000);
+  }
+
+
+  if (Vstate < 4.75 && Vstate > 5.25)//индикация нормального диапазона питания МК
+  {
+    digitalWrite(5, LOW);
+    delay(SEC * 1000);
+  } else {
+    digitalWrite(5, HIGH);
+    delay(SEC * 1000);
+  }
+}
