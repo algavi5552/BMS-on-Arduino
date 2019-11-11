@@ -27,7 +27,7 @@ void setup() {
 //float a = 0;
 //float average, average2;
 
-float a, Vstate, average, average2 = 0;
+float a, Vstate, average, average2, average3, average4, average5, Cell_1, Cell_2, Cell_3 = 0;
 int cycle = 0;
 bool F1, F2 = false;
 
@@ -62,6 +62,40 @@ void loop() {// цикл
   Vstate = 5 * 2 * average2 / 1023;
   Serial.print(Vstate);
   Serial.print(" Вольт питание МК\n");
+
+
+//readAnalogVoltage(A3)
+  long sum3 = 0;
+  for (int j = 0; j < NUM_SAMPLE; j++) {
+    sum3 += analogRead(A3); // читаем вход на аналоговом пине А3 и складываем его
+  } average3 = sum3 / NUM_SAMPLE; // вычисляем среднее значение напряжения на ячейке 1
+
+  Cell_1 =  5* average3 / 1023;
+  Serial.print(Cell_1);
+  Serial.print(" Вольт на первом аккумуляторе\n");
+
+
+  //readAnalogVoltage(A4)
+  long sum4 = 0;
+  for (int k = 0; k < NUM_SAMPLE; k++) {
+    sum4 += analogRead(A4); // читаем вход на аналоговом пине А4 и складываем его
+  } average4 = sum4 / NUM_SAMPLE; // вычисляем среднее значение напряжения на ячейке 2
+
+  Cell_2 =  5* average4 / 1023;
+  Serial.print(Cell_2);
+  Serial.print(" Вольт на втором аккумуляторе\n");
+
+   //readAnalogVoltage(A5)
+  long sum5 = 0;
+  for (int m = 0; m < NUM_SAMPLE; m++) {
+    sum5 += analogRead(A5); // читаем вход на аналоговом пине А5 и складываем его
+  } average5 = sum5 / NUM_SAMPLE; // вычисляем среднее значение напряжения на ячейке 3
+
+  Cell_3 =  5* average5 / 1023;
+  Serial.print(Cell_3);
+  Serial.print(" Вольт на третьем аккумуляторе\n");
+
+  
   // преобразуем аналоговый сигнал (амплитуда 0 - 1023) в напряжение (0 - 5В):
   // используем делитель 1к3, чтобы входной сигнал попал в ограничение до 5В;
   // выводим значение напряжения:
